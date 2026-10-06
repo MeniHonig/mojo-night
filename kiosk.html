@@ -79,11 +79,6 @@ bdi{unicode-bidi:isolate}
 
 form{text-align:right;margin:0}
 .field{margin:0 0 14px}
-/* שם פרטי ושם משפחה באותה שורה: פרטי מימין, משפחה משמאל */
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0 0 14px}
-.field-row .field{margin:0;min-width:0}
-/* בשורה אחת אין מקום לתווית באנגלית; היא עוברת לטקסט הרמז שבתוך השדה */
-.field-row .label-en{display:none}
 .field input::placeholder{color:var(--cream-60);font-weight:500;font-size:15px;opacity:1}
 .field label{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;column-gap:8px;margin:0 3px 7px;
   font-weight:700;font-size:15px;color:var(--cream)}
@@ -213,21 +208,12 @@ body[data-state="submitting"] .spinner{display:inline-block}
         <div class="divider" aria-hidden="true"><span></span><i>◆</i><span></span></div>
 
         <form id="checkin-form" novalidate>
-          <div class="field-row">
           <div class="field">
-            <label for="first-name"><span>שם פרטי</span><span class="label-en" lang="en" dir="ltr">First name</span></label>
-            <input id="first-name" name="firstName" type="text" required dir="auto" maxlength="40" placeholder="First name"
-              autocomplete="given-name" autocapitalize="words" autocorrect="off" spellcheck="false"
-              enterkeyhint="next" aria-describedby="first-name-error">
-            <p id="first-name-error" class="field-error" hidden></p>
-          </div>
-          <div class="field">
-            <label for="last-name"><span>שם משפחה</span><span class="label-en" lang="en" dir="ltr">Last name</span></label>
-            <input id="last-name" name="lastName" type="text" required dir="auto" maxlength="40" placeholder="Last name"
-              autocomplete="family-name" autocapitalize="words" autocorrect="off" spellcheck="false"
-              enterkeyhint="send" aria-describedby="last-name-error">
-            <p id="last-name-error" class="field-error" hidden></p>
-          </div>
+            <label for="full-name"><span>שם פרטי ושם משפחה</span><span class="label-en" lang="en" dir="ltr">Full name</span></label>
+            <input id="full-name" name="fullName" type="text" required dir="auto" maxlength="81"
+              placeholder="למשל: נועה כהן" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false"
+              enterkeyhint="send" aria-describedby="full-name-error">
+            <p id="full-name-error" class="field-error" hidden></p>
           </div>
 
           <div id="form-alert" class="alert" role="alert" hidden>
@@ -287,8 +273,8 @@ body[data-state="submitting"] .spinner{display:inline-block}
     submitting: 'רושמים את ההגעה…',
     retrying: 'יש עומס קטן, מנסים שוב…',
     retry: 'ניסיון נוסף',
-    firstMissing: 'נא למלא שם פרטי',
-    lastMissing: 'נא למלא שם משפחה',
+    nameMissing: 'נא לכתוב שם פרטי ושם משפחה',
+    lastMissing: 'נא להוסיף גם שם משפחה',
     fixFields: 'חסרים פרטים בטופס',
     success: 'איזה כיף שבאת!',
     successText: 'ההגעה נרשמה, והרחבה כבר מחכה לך.',
@@ -324,10 +310,8 @@ body[data-state="submitting"] .spinner{display:inline-block}
     remembered: byId('remembered'),
     rememberedName: byId('remembered-name'),
     form: byId('checkin-form'),
-    first: byId('first-name'),
-    last: byId('last-name'),
-    firstError: byId('first-name-error'),
-    lastError: byId('last-name-error'),
+    name: byId('full-name'),
+    nameError: byId('full-name-error'),
     alert: byId('form-alert'),
     alertTitle: byId('form-alert-title'),
     alertText: byId('form-alert-text'),
@@ -358,6 +342,24 @@ body[data-state="submitting"] .spinner{display:inline-block}
   function announce(text) {
     ui.live.textContent = '';
     window.setTimeout(() => { ui.live.textContent = text; }, 60);
+  }
+
+  /**
+   * שדה אחד לשם המלא: המילה הראשונה היא השם הפרטי, וכל השאר — שם המשפחה.
+   * כך הגיליון ממשיך לקבל שתי עמודות, והשרת לא השתנה.
+   */
+  function splitName(value) {
+    const full = String(value == null ? '' : value)
+      .replace(BIDI_MARKS, '')
+      .replace(CONTROL_CHARS, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const space = full.indexOf(' ');
+    return {
+      full: full,
+      firstName: cleanName(space === -1 ? full : full.slice(0, space)),
+      lastName: cleanName(space === -1 ? '' : full.slice(space + 1))
+    };
   }
 
   function cleanName(value) {
@@ -471,17 +473,17 @@ body[data-state="submitting"] .spinner{display:inline-block}
     event.preventDefault();
     if (state === 'submitting') return;
 
-    const payload = { firstName: cleanName(ui.first.value), lastName: cleanName(ui.last.value) };
-    ui.first.value = payload.firstName;
-    ui.last.value = payload.lastName;
-    setFieldError(ui.first, ui.firstError, payload.firstName ? '' : TEXT.firstMissing);
-    setFieldError(ui.last, ui.lastError, payload.lastName ? '' : TEXT.lastMissing);
+    const parts = splitName(ui.name.value);
+    const payload = { firstName: parts.firstName, lastName: parts.lastName };
+    ui.name.value = parts.full;
+    const problem = !parts.full ? TEXT.nameMissing : (!parts.lastName ? TEXT.lastMissing : '');
+    setFieldError(ui.name, ui.nameError, problem);
     hideAlert();
 
-    if (!payload.firstName || !payload.lastName) {
+    if (problem) {
       setBusy(false, TEXT.submit);
       setState('invalid');
-      (payload.firstName ? ui.last : ui.first).focus();
+      ui.name.focus();
       announce(TEXT.fixFields);
       return;
     }
@@ -552,12 +554,10 @@ body[data-state="submitting"] .spinner{display:inline-block}
     }
     if (code === 'validation') {
       window.clearTimeout(watchdog);
-      const onLast = result.field === 'lastName';
-      setFieldError(onLast ? ui.last : ui.first, onLast ? ui.lastError : ui.firstError,
-        String(result.message || TEXT.fixFields));
+      setFieldError(ui.name, ui.nameError, String(result.message || TEXT.fixFields));
       setBusy(false, TEXT.submit);
       setState('invalid');
-      (onLast ? ui.last : ui.first).focus();
+      ui.name.focus();
       return;
     }
     fail(code === 'busy' ? 'busy' : 'generic');
@@ -642,8 +642,7 @@ body[data-state="submitting"] .spinner{display:inline-block}
     window.clearTimeout(watchdog);
     attempt += 1;
     ui.form.reset();
-    setFieldError(ui.first, ui.firstError, '');
-    setFieldError(ui.last, ui.lastError, '');
+    setFieldError(ui.name, ui.nameError, '');
     hideAlert();
     setBusy(false, TEXT.submit);
     ui.kioskBox.hidden = true;
@@ -651,22 +650,14 @@ body[data-state="submitting"] .spinner{display:inline-block}
     ui.formView.hidden = false;
     setState(renderRemembered() ? 'remembered' : 'form');
     window.scrollTo(0, 0);
-    if (focusFirst) ui.first.focus();
+    if (focusFirst) ui.name.focus();
   }
 
   function init() {
     setState(renderRemembered() ? 'remembered' : 'form');
     ui.form.addEventListener('submit', onSubmit);
-    ui.first.addEventListener('keydown', event => {
-      if (event.key === 'Enter' && !event.isComposing) {
-        event.preventDefault();
-        ui.last.focus();
-      }
-    });
-    [[ui.first, ui.firstError], [ui.last, ui.lastError]].forEach(pair => {
-      pair[0].addEventListener('input', () => {
-        if (pair[0].getAttribute('aria-invalid')) setFieldError(pair[0], pair[1], '');
-      });
+    ui.name.addEventListener('input', () => {
+      if (ui.name.getAttribute('aria-invalid')) setFieldError(ui.name, ui.nameError, '');
     });
     ui.again.addEventListener('click', () => resetForm(true));
     window.addEventListener('online', () => {
@@ -674,7 +665,7 @@ body[data-state="submitting"] .spinner{display:inline-block}
         ui.alertText.textContent = TEXT.backOnline;
       }
     });
-    if (BOOT.kiosk) ui.first.focus();
+    if (BOOT.kiosk) ui.name.focus();
   }
 
   init();
