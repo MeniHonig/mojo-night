@@ -197,11 +197,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
       <p class="kicker">שבת<span class="sep" aria-hidden="true">·</span><bdi dir="ltr">10.10.2026</bdi><span class="sep" aria-hidden="true">·</span>סלון התיבה, יפו</p>
 
       <section id="view-form" aria-labelledby="form-title">
-        <div id="remembered" class="remembered" hidden>
-          <p>כבר אישרת הגעה מהטלפון הזה <span class="tick">✓</span>
-            <span class="who">(<bdi id="remembered-name"></bdi>)</span></p>
-          <small>אפשר לאשר כאן הגעה גם לאורח/ת נוסף/ת.</small>
-        </div>
         <h1 id="form-title" class="title gold-text">ברוכים הבאים!</h1>
         <p class="lead">רק נרשום שהגעת, ומשם ישר לרחבה.</p>
         <p class="lead-en" lang="en" dir="ltr">Welcome! Enter your name to check in.</p>
@@ -265,7 +260,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
   const CONTROL_CHARS = /[\u0000-\u001F\u007F]/g;
   const WATCHDOG_MS = 25000;
   const BUSY_RETRY_MS = 1500;
-  const REMEMBER_FOR_MS = 20 * 60 * 60 * 1000;
 
   const TEXT = {
     submit: 'אישור הגעה',
@@ -278,9 +272,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
     success: 'איזה כיף שבאת!',
     successText: 'ההגעה נרשמה, והרחבה כבר מחכה לך.',
     successEn: 'You\'re checked in. See you on the dance floor!',
-    duplicate: 'כבר רשמנו אותך!',
-    duplicateText: 'השם הזה כבר אושר קודם הערב, אז הכול מסודר ואין צורך לאשר שוב.',
-    duplicateEn: 'You\'re already checked in. Enjoy the night!',
     backOnline: 'החיבור חזר — אפשר לנסות שוב.',
     errors: {
       offline: {
@@ -306,8 +297,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
   const ui = {
     formView: byId('view-form'),
     doneView: byId('view-done'),
-    remembered: byId('remembered'),
-    rememberedName: byId('remembered-name'),
     form: byId('checkin-form'),
     name: byId('full-name'),
     nameError: byId('full-name-error'),
@@ -366,36 +355,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, BOOT.maxLength);
-  }
-
-  // localStorage עלול לזרוק או להיות מחולק ב-iframe של Google — כל גישה עטופה.
-  function readRemembered() {
-    if (BOOT.kiosk) return null;
-    try {
-      const raw = window.localStorage.getItem(BOOT.storageKey);
-      const saved = raw ? JSON.parse(raw) : null;
-      if (!saved || typeof saved.name !== 'string' || !saved.name) return null;
-      if (typeof saved.at === 'number' && Date.now() - saved.at > REMEMBER_FOR_MS) return null;
-      return saved;
-    } catch (ignored) {
-      return null;
-    }
-  }
-
-  function remember(name) {
-    if (BOOT.kiosk) return;
-    try {
-      window.localStorage.setItem(BOOT.storageKey, JSON.stringify({ name: name, at: Date.now() }));
-    } catch (ignored) {
-      // אין אחסון — פשוט לא נזכור.
-    }
-  }
-
-  function renderRemembered() {
-    const saved = readRemembered();
-    ui.remembered.hidden = !saved;
-    ui.rememberedName.textContent = saved ? cleanName(saved.name) : '';
-    return Boolean(saved);
   }
 
   function setFieldError(input, box, message) {
@@ -570,13 +529,12 @@ body[data-state="submitting"] .spinner{display:inline-block}
 
   function showDone(result, payload) {
     window.clearTimeout(watchdog);
-    const duplicate = result.duplicate === true;
     const firstName = cleanName(result.firstName) || payload.firstName;
 
     // כותרת בשתי שורות קבועות: השם, ומתחתיו המשפט. מעבר השורה הוא המפריד, ולכן
     // אין פסיק גלוי: שם באנגלית לבד בשורה ימין-לשמאל היה מוצג ",Nicolai".
     // aria-label נותן לקוראי מסך את המשפט המלא, "נועה, איזה כיף שבאת!".
-    const line = duplicate ? TEXT.duplicate : TEXT.success;
+    const line = TEXT.success;
     const name = document.createElement('bdi');
     const phrase = document.createElement('span');
     name.className = 'title-name';
@@ -588,16 +546,15 @@ body[data-state="submitting"] .spinner{display:inline-block}
     ui.doneTitle.appendChild(document.createTextNode(' '));
     ui.doneTitle.appendChild(phrase);
     ui.doneTitle.setAttribute('aria-label', firstName + ', ' + line);
-    ui.doneText.textContent = duplicate ? TEXT.duplicateText : TEXT.successText;
-    ui.doneEn.textContent = duplicate ? TEXT.duplicateEn : TEXT.successEn;
+    ui.doneText.textContent = TEXT.successText;
+    ui.doneEn.textContent = TEXT.successEn;
 
-    remember(payload.firstName + ' ' + payload.lastName);
     markProgramNow();
     hideAlert();
     setBusy(false, TEXT.submit);
     ui.formView.hidden = true;
     ui.doneView.hidden = false;
-    setState(duplicate ? 'duplicate' : 'success');
+    setState('success');
 
     window.scrollTo(0, 0);
     try {
@@ -641,13 +598,13 @@ body[data-state="submitting"] .spinner{display:inline-block}
     ui.kioskBox.hidden = true;
     ui.doneView.hidden = true;
     ui.formView.hidden = false;
-    setState(renderRemembered() ? 'remembered' : 'form');
+    setState('form');
     window.scrollTo(0, 0);
     if (focusFirst) ui.name.focus();
   }
 
   function init() {
-    setState(renderRemembered() ? 'remembered' : 'form');
+    setState('form');
     ui.form.addEventListener('submit', onSubmit);
     ui.name.addEventListener('input', () => {
       if (ui.name.getAttribute('aria-invalid')) setFieldError(ui.name, ui.nameError, '');
