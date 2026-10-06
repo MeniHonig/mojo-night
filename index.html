@@ -211,7 +211,7 @@ body[data-state="submitting"] .spinner{display:inline-block}
           <div class="field">
             <label for="full-name"><span>שם פרטי ושם משפחה</span><span class="label-en" lang="en" dir="ltr">Full name</span></label>
             <input id="full-name" name="fullName" type="text" required dir="auto" maxlength="81"
-              placeholder="למשל: נועה כהן" autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false"
+              autocomplete="name" autocapitalize="words" autocorrect="off" spellcheck="false"
               enterkeyhint="send" aria-describedby="full-name-error">
             <p id="full-name-error" class="field-error" hidden></p>
           </div>
@@ -241,7 +241,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
         <h1 id="done-title" class="title gold-text" tabindex="-1"></h1>
         <p id="done-text" class="lead"></p>
         <p id="done-en" class="lead-en" lang="en" dir="ltr"></p>
-        <p id="done-ticket" class="ticket" hidden><span>הגעה מס׳</span><bdi id="done-number" dir="ltr"></bdi></p>
         <div id="kiosk-reset" class="kiosk-reset" hidden>
           <div class="kiosk-track"><span id="kiosk-bar"></span></div>
           <p id="kiosk-text" class="kiosk-text"></p>
@@ -320,8 +319,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
     doneTitle: byId('done-title'),
     doneText: byId('done-text'),
     doneEn: byId('done-en'),
-    ticket: byId('done-ticket'),
-    number: byId('done-number'),
     kioskBox: byId('kiosk-reset'),
     kioskBar: byId('kiosk-bar'),
     kioskText: byId('kiosk-text'),
@@ -593,10 +590,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
     ui.doneTitle.setAttribute('aria-label', firstName + ', ' + line);
     ui.doneText.textContent = duplicate ? TEXT.duplicateText : TEXT.successText;
     ui.doneEn.textContent = duplicate ? TEXT.duplicateEn : TEXT.successEn;
-
-    const number = Number(result.number);
-    ui.ticket.hidden = !(number > 0);
-    ui.number.textContent = number > 0 ? String(number) : '';
 
     remember(payload.firstName + ' ' + payload.lastName);
     markProgramNow();
