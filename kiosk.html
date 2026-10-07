@@ -234,14 +234,11 @@ body[data-state="submitting"] .spinner{display:inline-block}
           <div class="kiosk-track"><span id="kiosk-bar"></span></div>
           <p id="kiosk-text" class="kiosk-text"></p>
         </div>
-        <div class="actions">
-          
-          <button id="again-btn" class="btn btn-link" type="button">אישור הגעה לאורח/ת נוסף/ת</button>
-        </div>
         <section class="program" aria-labelledby="program-title">
           <h2 id="program-title">הערב בתכנית</h2>
-          <ol><li data-time="18:30"><time dir="ltr">18:30</time><span class="program-what"><b>פתיחה</b></span><span class="now-tag">עכשיו</span></li><li data-time="19:00"><time dir="ltr">19:00</time><span class="program-what"><b>סדנת Blues Dips</b><small>עם ניקולאי ומאשה</small></span><span class="now-tag">עכשיו</span></li><li data-time="20:00"><time dir="ltr">20:00</time><span class="program-what"><b>תקלוט סט פתיחה</b></span><span class="now-tag">עכשיו</span></li><li data-time="20:30"><time dir="ltr">20:30</time><span class="program-what"><b>ירון בן-עמי ויובל שפירא</b><small>סט בלוז ראשון</small></span><span class="now-tag">עכשיו</span></li><li data-time="21:15"><time dir="ltr">21:15</time><span class="program-what"><b>תקלוט סווינג</b><small>עם דיג&#39;יי לירז</small></span><span class="now-tag">עכשיו</span></li><li data-time="21:45"><time dir="ltr">21:45</time><span class="program-what"><b>ירון בן-עמי ויובל שפירא</b><small>סט בלוז שני</small></span><span class="now-tag">עכשיו</span></li><li data-time="22:30"><time dir="ltr">22:30</time><span class="program-what"><b>תקלוט בלוז וסווינג</b><small>עם דיג&#39;יי לירז</small></span><span class="now-tag">עכשיו</span></li><li data-time="00:00"><time dir="ltr">00:00</time><span class="program-what"><b>קיפולים</b></span><span class="now-tag">עכשיו</span></li></ol>
+          <ol><li data-time="18:30"><time dir="ltr">18:30</time><span class="program-what"><b>פתיחה</b></span><span class="now-tag">עכשיו</span></li><li data-time="19:00"><time dir="ltr">19:00</time><span class="program-what"><b>סדנת Blues Dips</b><small>עם ניקולאי ומאשה</small></span><span class="now-tag">עכשיו</span></li><li data-time="20:00"><time dir="ltr">20:00</time><span class="program-what"><b>תקלוט סט פתיחה</b></span><span class="now-tag">עכשיו</span></li><li data-time="20:45"><time dir="ltr">20:45</time><span class="program-what"><b>ירון בן-עמי ויובל שפירא</b><small>סט בלוז ראשון</small></span><span class="now-tag">עכשיו</span></li><li data-time="21:30"><time dir="ltr">21:30</time><span class="program-what"><b>תקלוט סווינג</b><small>עם דיג&#39;יי לירז</small></span><span class="now-tag">עכשיו</span></li><li data-time="22:00"><time dir="ltr">22:00</time><span class="program-what"><b>ירון בן-עמי ויובל שפירא</b><small>סט בלוז שני</small></span><span class="now-tag">עכשיו</span></li><li data-time="22:45"><time dir="ltr">22:45</time><span class="program-what"><b>תקלוט בלוז וסווינג</b><small>עם דיג&#39;יי לירז</small></span><span class="now-tag">עכשיו</span></li><li data-time="00:00"><time dir="ltr">00:00</time><span class="program-what"><b>קיפולים</b></span><span class="now-tag">עכשיו</span></li></ol>
         </section>
+        
       </section>
     </div>
   </article>
@@ -305,7 +302,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
     kioskBox: byId('kiosk-reset'),
     kioskBar: byId('kiosk-bar'),
     kioskText: byId('kiosk-text'),
-    again: byId('again-btn'),
     live: byId('live')
   };
 
@@ -603,7 +599,6 @@ body[data-state="submitting"] .spinner{display:inline-block}
     ui.name.addEventListener('input', () => {
       if (ui.name.getAttribute('aria-invalid')) setFieldError(ui.name, ui.nameError, '');
     });
-    ui.again.addEventListener('click', () => resetForm(true));
     window.addEventListener('online', () => {
       if (state === 'error' && ui.alert.getAttribute('data-kind') === 'offline') {
         ui.alertText.textContent = TEXT.backOnline;
